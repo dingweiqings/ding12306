@@ -46,9 +46,8 @@ def doRunning(job):
             print("Sleep 10 seconds")
 
             trainArr=TicketHandler.query_by_date(job)
-            print("Query by date")
+            print("Query by date"+str(trainArr))
             #检查票数的座位，如果有，则下单
-            print(trainArr)
             job.count=job.count+1
             print("Add job count ")
             cacheService.save_job(job)

@@ -64,7 +64,8 @@ def handle_response_query_date(response, trainNum):
         results = get_results(response)
         resultArr = []
         if not results:
-            return False
+            print(results)
+            return []
         for result in results:
             ticket_info = result.split('|')
             num = get_info_of_train_number(ticket_info)
@@ -129,14 +130,14 @@ def judge_date_legal(date):
   date_now = datetime.datetime.now()
   date_query = datetime.datetime.strptime(str(date), "%Y-%m-%d")
   diff = (date_query - date_now).days
-  # if date_now.day == date_query.day:
-  #     diff = 0
-  # if diff < 0:
-  #     msg = '乘车日期错误，比当前时间还早!'
-  #     raise BussinessException(message=msg)
-  # elif diff > Config.MAX_BUY_TIME:
-  #     msg = '乘车日期错误，超出一个月预售期'
-  #     raise BussinessException(message=msg)
+  if date_now.day == date_query.day:
+      diff = 0
+  if diff < 0:
+      msg = '乘车日期错误，比当前时间还早!'
+      raise BussinessException(message=msg)
+  elif diff > Config.MAX_BUY_TIME:
+      msg = '乘车日期错误，超出一个月预售期'
+      raise BussinessException(message=msg)
 def get_results(response):
   """
   解析查询返回结果
