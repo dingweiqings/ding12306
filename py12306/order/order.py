@@ -1,9 +1,6 @@
 import asyncio
 import urllib
 
-# from py12306.config import UserType
-from pyppeteer import launch
-
 from py12306.config import Config
 from py12306.helpers.api import *
 from py12306.helpers.func import *
@@ -15,71 +12,6 @@ from py12306.exceptions.BussinessException import BussinessException
 import re
 from py12306.log.logging import getLogger
 logger=getLogger(__name__)
-class DomBounding:
-    def __init__(self, rect: dict) -> None:
-        super().__init__()
-        self.x = rect['x']
-        self.y = rect['y']
-        self.width = rect['width']
-        self.height = rect['height']
-
-
-@singleton
-class Browser:
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def request_init_slide(self, session, html):
-        """ 处理滑块，拿到 session_id, sig """
-        OrderLog.add_quick_log('正在识别滑动验证码...').flush()
-        return asyncio.get_event_loop_policy().new_event_loop().run_until_complete(
-            self.__request_init_slide(session, html))
-
-    async def __request_init_slide(self, session, html):
-        """ 异步获取 """
-        browser = await launch(headless=True, autoClose=True, handleSIGINT=False, handleSIGTERM=False,
-                               handleSIGHUP=False)
-        page = await browser.newPage()
-        await page.setViewport({'width': 1200, 'height': 1080})
-        await page.setRequestInterception(True)
-        load_js = """() => {
-            __old = navigator.userAgent; navigator.__defineGetter__('userAgent', () => __old.replace('Headless', ''));
-            __old = navigator.appVersion; navigator.__defineGetter__('appVersion', () => __old.replace('Headless', ''));
-            var __newProto = navigator.__proto__; delete __newProto.webdriver; navigator.__proto__ = __newProto;
-        }"""
-        source_url = 'https://kyfw.12306.cn/otn'
-        html = html.replace('href="/otn', f'href="{source_url}').replace('src="/otn', f'src="{source_url}')
-
-        @page.on('framenavigated')
-        async def on_frame_navigated(_):
-            await page.evaluate(load_js)
-
-        @page.on('request')
-        async def on_request(req):
-            if req.url.startswith(API_INITDC_URL):
-                if req.isNavigationRequest():
-                    await page.setCookie(*session.dump_cookies())
-                    return await req.respond({'body': html})
-            return await req.continue_()
-
-        await page.goto(API_INITDC_URL, timeout=30000)
-        slide_btn = await page.waitForSelector('#slide_passcode .nc-lang-cnt', timeout=30000)
-        rect = await slide_btn.boundingBox()
-        pos = DomBounding(rect)
-        pos.x += 5
-        pos.y += 10
-        await page.mouse.move(pos.x, pos.y)
-        await page.mouse.down()
-        await page.mouse.move(pos.x + pos.width, pos.y, steps=30)
-        await page.mouse.up()
-        # 等待获取 session id
-        await page.evaluate(
-            'async () => {let i = 3 * 10; while (!csessionid && i >= 0) await new Promise(resolve => setTimeout(resolve, 100), i--);}')
-        ret = await page.evaluate('JSON.stringify({session_id: csessionid, sig: sig})')
-        await page.close()
-        await browser.close()
-        return json.loads(ret)
 
 
 class Order:
