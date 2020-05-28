@@ -57,7 +57,7 @@ class Config:
     NODE_SLAVE_CAN_BE_MASTER = 1
     NODE_IS_MASTER = 1
     NODE_NAME = ''
-    REDIS_HOST = '127.0.0.1'
+    REDIS_HOST = '10.10.10.201'
     REDIS_PORT = '6379'
     REDIS_DB='2'
     REDIS_PASSWORD = ''
