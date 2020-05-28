@@ -26,17 +26,13 @@ from task.JobTest import JobTest
 from rest_framework.response import Response
 from py12306.helpers.func import get_param,get_body
 import threading
-from py12306.order.order import Browser
 from web.libs.utils import getUserId
 from py12306.helpers.cache_service import CacheService
 from py12306.helpers.db_service import DbService
 from py12306.dto.QueryJob import QueryJobGrabbing
 import base64
 import datetime
-import pymysql as  MySQLdb
 from django.db import connection
-from task.grabbing import grabbing
-from py12306.exceptions.BussinessException import BussinessException
 dbService=DbService()
 # class QueryJobView(View):
 

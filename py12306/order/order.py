@@ -74,11 +74,6 @@ class Order:
             return
         slide_info = {}
         #目前看一直为false
-        if self.is_slide:
-            slide_info = Browser().request_init_slide(self.session, init_html)
-            if not slide_info.get('session_id') or not slide_info.get('sig'):
-                raise BussinessException(500,'滑动验证码失败')
-            OrderLog.add_quick_log('滑动验证码识别成功').flush()
         if not self.check_order_info(slide_info):
             return
         if not self.get_queue_count():
