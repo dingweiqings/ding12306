@@ -44,10 +44,10 @@ app.conf.result_accept_content=CELERY_RESULT_SERIALIZER
 #     }
 # }
 
-app.conf.beat_schedule = {
-    'add-every-30-seconds': {
-        'task': 'task.grabbing.push_worker_queue',
-        'schedule': 10.0,
-        'args': ()
-    },
-}
+# app.conf.beat_schedule = {
+#     'add-every-30-seconds': {
+#         'task': 'task.grabbing.push_worker_queue',
+#         'schedule': 10.0,
+#         'args': ()
+#     },
+# }
