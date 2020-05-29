@@ -434,13 +434,13 @@ class TicketHandler:
             logger.info("Query info %s", info)
         judge_date_legal(leftDate)
         query_time_out = 5
-        api_type = ''
+        api_type = 'leftTicket/query'
         response = api.get(API_QUERY_INIT_PAGE)
         if response.status_code == 200:
             res = re.search(r'var CLeftTicketUrl = \'(.*)\';', response.text)
             try:
                 api_type = res.group(1)
-                logger.info("Api type ",api_type)
+                logger.info("Api type %s",api_type)
             except IndexError as error:
                 print("Error",error)
                 raise BussinessException(message=error)
