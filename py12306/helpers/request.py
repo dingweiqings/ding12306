@@ -1,11 +1,16 @@
 import requests
 from requests.exceptions import *
-
+from py12306.helpers.api import *
 from py12306.helpers.func import *
+import re
+from py12306.exceptions.BussinessException import BussinessException
 from requests_html import HTMLSession, HTMLResponse
 from py12306.helpers.api import API_TICKET_INDEX,API_GET_BROWSER_DEVICE_ID
 #request.packages.urllib3.disable_warnings()
-
+from py12306.helpers.cache_service import CacheService
+from py12306.logging_factory import getLogger
+logger=getLogger(__name__)
+cacheService=CacheService()
 #使用连接池优化,工厂模式
 #event green
 class Request(HTMLSession):
@@ -31,7 +36,22 @@ class Request(HTMLSession):
             for chunk in response.iter_content(chunk_size=1024):
                 f.write(chunk)
         return response
-
+    @staticmethod
+    def getInstance(jobId):
+        api=cacheService.get_api_request(jobId)
+        if not api:
+            api=Request()
+            response = api.get(API_QUERY_INIT_PAGE)
+            if response.status_code == 200:
+                res = re.search(r'var CLeftTicketUrl = \'(.*)\';', response.text)
+                try:
+                    api_type = res.group(1)
+                    logger.info("Api type %s", api_type)
+                except IndexError as error:
+                    print("Error", error)
+                    raise BussinessException(message=error)
+            cacheService.set_api_request(jobId,api)
+        return api
     @staticmethod
     def _handle_response(response, **kwargs) -> HTMLResponse:
         """

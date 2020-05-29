@@ -419,31 +419,33 @@ class TicketHandler:
         通过日期进行查询
         :return:
         """
-        api=Request()
+        api=''
         if isinstance(info,QueryJobGrabbing):
             leftDate = info.left_date
             leftStationCode = info.left_station
             arriveStationCode = info.arrive_station
             trainNum = info.train_number
+            api=Request.getInstance(info.id)
             logger.info("Query info %s", info.__dict__)
         else:
             leftDate = info['leftDate']
             leftStationCode = info['leftStation']
             arriveStationCode = info['arriveStation']
             trainNum = info['trainNum']
+            api = Request.getInstance('Internal')
             logger.info("Query info %s", info)
         judge_date_legal(leftDate)
         query_time_out = 5
         api_type = 'leftTicket/query'
-        response = api.get(API_QUERY_INIT_PAGE)
-        if response.status_code == 200:
-            res = re.search(r'var CLeftTicketUrl = \'(.*)\';', response.text)
-            try:
-                api_type = res.group(1)
-                logger.info("Api type %s",api_type)
-            except IndexError as error:
-                print("Error",error)
-                raise BussinessException(message=error)
+        # response = api.get(API_QUERY_INIT_PAGE)
+        # if response.status_code == 200:
+        #     res = re.search(r'var CLeftTicketUrl = \'(.*)\';', response.text)
+        #     try:
+        #         api_type = res.group(1)
+        #         logger.info("Api type %s",api_type)
+        #     except IndexError as error:
+        #         print("Error",error)
+        #         raise BussinessException(message=error)
         from py12306.helpers.cdn import Cdn
         url = LEFT_TICKETS.get('url').format(left_date=leftDate, left_station=leftStationCode,
                                              arrive_station=arriveStationCode, type=api_type)

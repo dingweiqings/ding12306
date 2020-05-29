@@ -42,6 +42,17 @@ class CacheService:
       def del_ticket_broswer(self,userId):
            self.redis.delete(TICKET_BROSWER_MAP+":"+userId)
 
+      def get_api_request(self,jobId):
+          obj = self.redis.get(API_REQUEST+":"+jobId)
+          if obj:
+            return pickle.loads(obj)
+          return obj
+      def set_api_request(self,jobId,obj):
+          if obj and jobId:
+              self.redis.set(API_REQUEST+":"+jobId, pickle.dumps(obj),expire)
+      def del_api_request(self,jobId):
+           self.redis.delete(API_REQUEST+":"+jobId)
+
       def get_user_info(self,userId):
           obj = self.redis.get(USER_INFO_MAP+":"+userId)
           if obj:

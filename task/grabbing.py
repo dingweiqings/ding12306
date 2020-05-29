@@ -46,8 +46,9 @@ def doRunning(job):
             # 防止ip被屏蔽
             time.sleep(5)
             logger.info("Sleep 10 seconds")
+            logger.info("Query by date %s ", job.__dict__)
             trainArr=TicketHandler.query_by_date(job)
-            logger.info("Query by date %s ", trainArr.__dict__)
+            logger.info("Train arr %s",trainArr)
             #检查票数的座位，如果有，则下单
             job.count=job.count+1
             logger.info("Add job count ")
