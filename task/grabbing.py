@@ -12,6 +12,7 @@ from task.logging_facory import getLogger
 dbService=DbService()
 cacheService=CacheService()
 logger=getLogger(__name__)
+sleep_time = 10
 @app.task
 def grabbing(job):
         if job.state == QueryJobState.NEW.value:
@@ -44,11 +45,16 @@ def doRunning(job):
                job.state=QueryJobState.END.value
                break
             # 防止ip被屏蔽
-            time.sleep(5)
-            logger.info("Sleep 10 seconds")
+            time.sleep(sleep_time)
+            logger.info("Sleep %10 seconds",sleep_time)
             logger.info("Query by date %s ", job.__dict__)
             trainArr=TicketHandler.query_by_date(job)
-            logger.info("Train arr %s",str(trainArr))
+            if trainArr:
+                logger.info("Query by date response %s", trainArr[0].__dict__)
+                two_seat_arr=[item.two_seat for item in trainArr]
+                logger.info("Train arr %s",",".join(two_seat_arr))
+            else:
+                logger.info("Query by date response is empty")
             #检查票数的座位，如果有，则下单
             job.count=job.count+1
             logger.info("Add job count ")
@@ -59,9 +65,9 @@ def doRunning(job):
         except Exception as e:
             #时间错误
             logger.exception(e)
-            if e.message=='乘车日期错误，比当前时间还早!' or e.message=='乘车日期错误，超出一个月预售期':
-                print("Error",e.message)
-                break
+            # if e.message=='乘车日期错误，比当前时间还早!' or e.message=='乘车日期错误，超出一个月预售期':
+            #     print("Error",e.message)
+            #     break
             #网络错误
             #没有这个车次
 def save(job):
