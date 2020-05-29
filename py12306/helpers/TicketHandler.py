@@ -440,6 +440,7 @@ class TicketHandler:
             res = re.search(r'var CLeftTicketUrl = \'(.*)\';', response.text)
             try:
                 api_type = res.group(1)
+                logger.info("Api type ",api_type)
             except IndexError as error:
                 print("Error",error)
                 raise BussinessException(message=error)
