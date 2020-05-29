@@ -8,30 +8,32 @@ from multiprocessing import Process
 from task.cerely import app
 from py12306.helpers.cache_service import CacheService
 from py12306.helpers.db_service import DbService
+from task.logging_facory import getLogger
 dbService=DbService()
 cacheService=CacheService()
+logger=getLogger(__name__)
 @app.task
 def grabbing(job):
         if job.state == QueryJobState.NEW.value:
-            print("Job is new")
+            logger.info("Job is new")
         elif job.state == QueryJobState.START.value:
             #job 是对象，可以直接修改，不是int str 这种不可变对象
             job.state=QueryJobState.RUNNING.value
-            print("Change job state to running")
+            logger.info("Change job state to running")
             grabbing(job)
            #修改值为running
         elif job.state == QueryJobState.RUNNING.value:
             doRunning(job)
-            print("Job running")
+            logger.info("Job running")
         elif job.state == QueryJobState.BLOCK.value:
-            print("Job block")
+            logger.info("Job block")
         elif job.state == QueryJobState.END.value:
-            print("Job is already end,do nothing")
+            logger.info("Job is already end,do nothing")
 def checkShouldEnd(job):
-    if judge_date_legal(job.left_date):
+    if judge_date_legal(job.left_date,job):
         return True
 def checkState(job):
-    print("Job state",job.state)
+    logger.info("Job state %s",job.state)
     if job.state != QueryJobState.RUNNING.value:
         raise BussinessException
 def doRunning(job):
@@ -42,21 +44,20 @@ def doRunning(job):
                job.state=QueryJobState.END.value
                break
             # 防止ip被屏蔽
-            time.sleep(10)
-            print("Sleep 10 seconds")
-
+            time.sleep(5)
+            logger.info("Sleep 10 seconds")
             trainArr=TicketHandler.query_by_date(job)
-            print("Query by date"+trainArr.__dict__)
+            logger.info("Query by date %s ", trainArr.__dict__)
             #检查票数的座位，如果有，则下单
             job.count=job.count+1
-            print("Add job count ")
+            logger.info("Add job count ")
             cacheService.save_job(job)
-            print("Save to redis")
+            logger.info("Save to redis")
             dbService.save_job(job)
-            print("Save to db")
+            logger.info("Save to db")
         except Exception as e:
             #时间错误
-            print(e)
+            logger.exception(e)
             if e.message=='乘车日期错误，比当前时间还早!' or e.message=='乘车日期错误，超出一个月预售期':
                 print("Error",e.message)
                 break

@@ -5,7 +5,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1','localhost']
 REDIS_HSOT='127.0.0.1'
 REDIS_DATABASE='2'
-
+LOGIN_URL='/api/account/login/'
 DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,

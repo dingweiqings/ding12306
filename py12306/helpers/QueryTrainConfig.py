@@ -126,12 +126,22 @@ def handle_response_query_date(response, trainNum):
             # 处理返回的ticket_info
         return resultArr
 
-def judge_date_legal(date):
+def judge_date_legal(date, train_info=None):
   date_now = datetime.datetime.now()
   date_query = datetime.datetime.strptime(str(date), "%Y-%m-%d")
   diff = (date_query - date_now).days
+  # 查询日期是过去的时间
   if date_now.day == date_query.day:
       diff = 0
+      # 查询日期是当天，发车两小时前停止网络售票
+      if train_info:
+         if isinstance(train_info,dict):
+            left_time=train_info['left_time']
+         else:
+             left_time=train_info.left_time
+         interval=int(left_time.split(":")[0])*60+int(left_time.split(":")[1])-(date_now.hour*60+date_now.minute)
+         if interval <=Config.MIN_BUY_TIME:
+             raise BussinessException(message="发车前两小时禁止网络售票")
   if diff < 0:
       msg = '乘车日期错误，比当前时间还早!'
       raise BussinessException(message=msg)

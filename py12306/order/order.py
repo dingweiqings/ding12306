@@ -1,16 +1,14 @@
-import asyncio
 import urllib
 
 from py12306.config import Config
 from py12306.helpers.api import *
 from py12306.helpers.func import *
-from py12306.helpers.notification import Notification
 from py12306.helpers.type import UserType, SeatType
 from py12306.log.common_log import CommonLog
 from py12306.log.order_log import OrderLog
 from py12306.exceptions.BussinessException import BussinessException
 import re
-from py12306.log.logging import getLogger
+from py12306.logging_factory import getLogger
 logger=getLogger(__name__)
 
 
@@ -64,6 +62,7 @@ class Order:
 
     def normal_order(self):
         # 提交订单
+        logger.info("Start sumbit order")
         order_request_res = self.submit_order_request()
         if order_request_res == -1: #-1 表示已经有未处理的订单表示下单成功
             return self.order_did_success()
@@ -100,46 +99,49 @@ class Order:
         info_message = OrderLog.get_order_success_notification_info(self.query_ins)
         normal_message = OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id,
                                                                                              self.user_ins.username)
-        if Config().EMAIL_ENABLED:  # 邮件通知
-            Notification.send_email(Config().EMAIL_RECEIVER, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                    normal_message + info_message)
-        if Config().DINGTALK_ENABLED:  # 钉钉通知
-            Notification.dingtalk_webhook(normal_message + info_message)
-        if Config().TELEGRAM_ENABLED:  # Telegram推送
-            Notification.send_to_telegram(normal_message + info_message)
-        if Config().SERVERCHAN_ENABLED:  # ServerChan通知
-            Notification.server_chan(Config().SERVERCHAN_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                     normal_message + info_message)
-        if Config().PUSHBEAR_ENABLED:  # PushBear通知
-            Notification.push_bear(Config().PUSHBEAR_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                   normal_message + info_message)
-        if Config().BARK_ENABLED:
-            Notification.push_bark(normal_message + info_message)
-
-        if Config().NOTIFICATION_BY_VOICE_CODE:  # 语音通知
-            if Config().NOTIFICATION_VOICE_CODE_TYPE == 'dingxin':
-                voice_info = {
-                    'left_station': self.query_ins.left_station,
-                    'arrive_station': self.query_ins.arrive_station,
-                    'set_type': self.query_ins.current_seat_name,
-                    'orderno': self.order_id
-                }
-            else:
-                voice_info = OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_CONTENT.format(
-                    self.query_ins.left_station, self.query_ins.arrive_station)
-            OrderLog.add_quick_log(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_START_SEND)
-            Notification.voice_code(Config().NOTIFICATION_VOICE_CODE_PHONE, self.user_ins.username, voice_info)
-        # 取消循环发送通知
-        # while sustain_time:  # TODO 后面直接查询有没有待支付的订单就可以
-        #     num += 1
+        logger.info(info_message)
+        logger.info(normal_message)
+        # if Config().EMAIL_ENABLED:  # 邮件通知
+        #     Notification.send_email(Config().EMAIL_RECEIVER, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
+        #                             normal_message + info_message)
+        # if Config().DINGTALK_ENABLED:  # 钉钉通知
+        #     Notification.dingtalk_webhook(normal_message + info_message)
+        # if Config().TELEGRAM_ENABLED:  # Telegram推送
+        #     Notification.send_to_telegram(normal_message + info_message)
+        # if Config().SERVERCHAN_ENABLED:  # ServerChan通知
+        #     Notification.server_chan(Config().SERVERCHAN_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
+        #                              normal_message + info_message)
+        # if Config().PUSHBEAR_ENABLED:  # PushBear通知
+        #     Notification.push_bear(Config().PUSHBEAR_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
+        #                            normal_message + info_message)
+        # if Config().BARK_ENABLED:
+        #     Notification.push_bark(normal_message + info_message)
+        #
+        # if Config().NOTIFICATION_BY_VOICE_CODE:  # 语音通知
+        #     if Config().NOTIFICATION_VOICE_CODE_TYPE == 'dingxin':
+        #         voice_info = {
+        #             'left_station': self.query_ins.left_station,
+        #             'arrive_station': self.query_ins.arrive_station,
+        #             'set_type': self.query_ins.current_seat_name,
+        #             'orderno': self.order_id
+        #         }
         #     else:
-        #         break
-        #     sustain_time -= self.notification_interval
-        #     sleep(self.notification_interval)
-
-        OrderLog.add_quick_log(OrderLog.MESSAGE_JOB_CLOSED).flush()
+        #         voice_info = OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_CONTENT.format(
+        #             self.query_ins.left_station, self.query_ins.arrive_station)
+        #     OrderLog.add_quick_log(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_START_SEND)
+        #     Notification.voice_code(Config().NOTIFICATION_VOICE_CODE_PHONE, self.user_ins.username, voice_info)
+        # # 取消循环发送通知
+        # # while sustain_time:  # TODO 后面直接查询有没有待支付的订单就可以
+        # #     num += 1
+        # #     else:
+        # #         break
+        # #     sustain_time -= self.notification_interval
+        # #     sleep(self.notification_interval)
+        #
+        # OrderLog.add_quick_log(OrderLog.MESSAGE_JOB_CLOSED).flush()
         return True
     #下单前检查，看有没有未处理订单
+    #返回true 表示继续后面的下单操作
     def submit_order_request(self):
         data = {
             'secretStr': urllib.parse.unquote(self.query_ins['secret_str']),  # 解密
@@ -151,22 +153,20 @@ class Order:
             'query_to_station_name': self.query_ins['arrive_station'],
         }
         response = self.session.post(API_SUBMIT_ORDER_REQUEST, data)
+        logger.info("End sumbit order request %s ",response)
         if '车票信息已过期，请重新查询最新车票信息' in response['messages']:
             raise BussinessException(500,'车票信息已过期，请重新查询最新车票信息')
         result = response
         if result.get('data') == 'N':
-            OrderLog.add_quick_log(OrderLog.MESSAGE_SUBMIT_ORDER_REQUEST_SUCCESS).flush()
+            logger.info("Sumbit request ,next queue")
             return True
         else:
             if (str(result.get('messages', '')).find('未处理') >= 0):  # 未处理订单
                 # 0125 增加排队时长到 5 分钟之后，更多的是 排队失败，得通过拿到订单列表才能确认，再打个 TODO
                 # self.order_id = 0  # 需要拿到订单号 TODO
-                return -1
-                pass
-            OrderLog.add_quick_log(
-                OrderLog.MESSAGE_SUBMIT_ORDER_REQUEST_FAIL.format(
-                    result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
-        return False
+                logger.info("Exists order now")
+                return False
+        return True
     #真正提交下单请求
     def check_order_info(self, slide_info=None):
         """
@@ -180,6 +180,7 @@ class Order:
         REPEAT_SUBMIT_TOKEN=458bf1b0a69431f34f9d2e9d3a11cfe9
         :return:
         """
+        logger.info("Check order info")
         data = {  #
             'cancel_flag': 2,
             'bed_level_order_num': '000000000000000000000000000000',
@@ -191,32 +192,23 @@ class Order:
             '_json_att': '',
             'REPEAT_SUBMIT_TOKEN': self.user_ins.global_repeat_submit_token
         }
-        if self.is_slide:
-            data.update({
-                'sessionId': slide_info['session_id'],
-                'sig': slide_info['sig'],
-                'scene': 'nc_login',
-            })
         response = self.session.post(API_CHECK_ORDER_INFO, data)
+        logger.info("Check order info %s",response)
         result = response
         if result.get('data.submitStatus'):  # 成功
             # ifShowPassCode 需要验证码
-            OrderLog.add_quick_log(OrderLog.MESSAGE_CHECK_ORDER_INFO_SUCCESS).flush()
-            if result.get('data.ifShowPassCode') != 'N':
-                self.is_need_auth_code = True
-
-            # if ( ticketInfoForPassengerForm.isAsync == ticket_submit_order.request_flag.isAsync & & ticketInfoForPassengerForm.queryLeftTicketRequestDTO.ypInfoDetail != "") { 不需要排队检测 js TODO
             return True
         else:
-            error = CommonLog.MESSAGE_API_RESPONSE_CAN_NOT_BE_HANDLE
+            error = ''
             if not result.get('data.isNoActive'):
-                error = result.get('data.errMsg', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR)
+                error = result.get('data.errMsg')
             else:
                 if result.get('data.checkSeatNum'):
                     error = '无法提交您的订单! ' + result.get('data.errMsg')
                 else:
                     error = '出票失败! ' + result.get('data.errMsg')
-            OrderLog.add_quick_log(OrderLog.MESSAGE_CHECK_ORDER_INFO_FAIL.format(error)).flush()
+            logger.info("Check order failure %s",error)
+            return False
         return False
     #获取队列人数
     def get_queue_count(self):
@@ -235,6 +227,7 @@ class Order:
         REPEAT_SUBMIT_TOKEN	0977caf26f25d1da43e3213eb35ff87c
         :return:
         """
+        logger.info("Get queue count")
         data = {  #
             'train_date': '{} 00:00:00 GMT+0800 (China Standard Time)'.format(
                 datetime.datetime.strptime(self.query_ins['left_date'], '%Y-%m-%d').strftime("%a %h %d %Y")),
@@ -253,6 +246,7 @@ class Order:
             'REPEAT_SUBMIT_TOKEN': self.user_ins.global_repeat_submit_token,
         }
         response = self.session.post(API_GET_QUEUE_COUNT, data)
+        logger.info("Get queue count %s",response)
         result = response
         if result.get('status', False):  # 成功
             """
@@ -287,6 +281,7 @@ class Order:
             return True
         else:
             # 加入小黑屋
+            logger.info("Add to black list")
             OrderLog.add_quick_log(OrderLog.MESSAGE_GET_QUEUE_COUNT_FAIL.format(
                 result.get('messages', result.get('validateMessages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR)))).flush()
         return False
@@ -310,6 +305,7 @@ class Order:
         REPEAT_SUBMIT_TOKEN	0977caf26f25d1da43e3213eb35ff87c
         :return:
         """
+        logger.info("Confirm queue")
         data = {  #
             'passengerTicketStr': self.passenger_ticket_str,
             'oldPassengerStr': self.old_passenger_str,
@@ -327,10 +323,8 @@ class Order:
             'REPEAT_SUBMIT_TOKEN': self.user_ins.global_repeat_submit_token,
         }
 
-        if self.is_need_auth_code:  # 目前好像是都不需要了，有问题再处理
-            pass
-
         response = self.session.post(API_CONFIRM_SINGLE_FOR_QUEUE, data)
+        logger.info("Confirm queue %s ",response)
         result = response
 
         if 'data' in result:
@@ -344,12 +338,9 @@ class Order:
                 return True
             else:
                 # 加入小黑屋 TODO
-                OrderLog.add_quick_log(
-                    OrderLog.MESSAGE_CONFIRM_SINGLE_FOR_QUEUE_ERROR.format(
-                        result.get('data.errMsg', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
+                logger.info("Add black list ",result.get('data.errMsg'))
         else:
-            OrderLog.add_quick_log(OrderLog.MESSAGE_CONFIRM_SINGLE_FOR_QUEUE_FAIL.format(
-                result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
+            logger.info("Confirm queue failure %s ",result.get('messages'))
         return False
     #排队查询,查看订单，最后一步
     def query_order_wait_time(self):
@@ -363,6 +354,7 @@ class Order:
         """
         self.current_queue_wait = self.max_queue_wait
         self.queue_num = 0
+        logger.info("Query order last time")
         while self.current_queue_wait:
             self.current_queue_wait -= self.wait_queue_interval
             self.queue_num += 1
@@ -375,6 +367,7 @@ class Order:
             }
 
             response = self.session.get(API_QUERY_ORDER_WAIT_TIME.format(urllib.parse.urlencode(data)),None)
+            logger.info("Query order last time %s",response)
             result = response
 
             if result.get('status') and 'data' in result:
@@ -419,10 +412,7 @@ class Order:
 
                 elif result_data.get('msg'):  # 失败 对不起，由于您取消次数过多，今日将不能继续受理您的订票请求。1月8日您可继续使用订票功能。
                     # TODO 需要增加判断 直接结束
-                    OrderLog.add_quick_log(
-                        OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(
-                            result_data.get('msg', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
-                    stay_second(self.retry_time)
+                    logger.info("Today cancel too many times ,you can order tommorrow")
                     return False
             elif result.get('messages') or result.get('validateMessages'):
                 OrderLog.add_quick_log(OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(
@@ -485,13 +475,14 @@ class Order:
         order = re.search(r'var orderRequestDTO *= *(\{.+\})', html)
         # 系统忙，请稍后重试
         if html.find('系统忙，请稍后重试') != -1:
-            OrderLog.add_quick_log(OrderLog.MESSAGE_REQUEST_INIT_DC_PAGE_FAIL).flush()  # 重试无用，直接跳过
+            logger.info("12306 系统忙，请稍后重试")
             return False, False, html
         try:
             self.user_ins.global_repeat_submit_token = token.groups()[0]
             self.user_ins.ticket_info_for_passenger_form = json.loads(form.groups()[0].replace("'", '"'))
             self.user_ins.order_request_dto = json.loads(order.groups()[0].replace("'", '"'))
-        except:
+        except Exception as e:
+            logger.exception("Init sumbit request page error")
             return False, False, html  # TODO Error
 
         slide_val = re.search(r"var if_check_slide_passcode.*='(\d?)'", html)

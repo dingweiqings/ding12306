@@ -1,32 +1,24 @@
-import json
 import pickle
 import re
 from os import path
-from py12306.log.logging import logging
-from py12306.cluster.cluster import Cluster
 from py12306.helpers.api import *
-from py12306.app import *
 from py12306.helpers.auth_code import AuthCode
-from py12306.helpers.event import Event
-from py12306.helpers.func import *
 from py12306.helpers.request import Request
 from py12306.helpers.type import UserType
 from py12306.helpers.QueryTrainConfig import *
 from py12306.log.order_log import OrderLog
 from py12306.log.user_log import UserLog
 from py12306.log.common_log import CommonLog
-from py12306.exceptions.BussinessException import BussinessException
 from py12306.helpers.cache_service import CacheService
 from py12306.order.order import Order
 # 封装12306 需要登录的操作
-import base64
 from py12306.exceptions.BussinessException import BussinessException
 from py12306.helpers.db_service import DbService
 from py12306.helpers.type import OrderSeatType, SeatType
 from py12306.dto.QueryJob import QueryJobGrabbing
 cacheService = CacheService()
 dbService=DbService()
-from py12306.log.logging import getLogger
+from py12306.logging_factory import getLogger
 logger=getLogger(__name__)
 class TicketBroswer:
     # heartbeat = 60 * 2  # 心跳保持时长
@@ -56,7 +48,7 @@ class TicketBroswer:
         self.key = info.id
         self.user_name = info.username
         self.password = info.password_ticket
-        self.handle_login()
+        #self.handle_login()
 
     # def getUserLoginDTO(self):
     #     return {"username": "D13340124151148","password": "pa279548ss"}
@@ -72,8 +64,9 @@ class TicketBroswer:
         response = self.session.get(url,params=params)
         return response
     def post(self,url,data,params=None):
+        #需要处理12306 session 过期的情况
         #self.handle_login()
-        print(url,data,params)
+        logger.info("%s %s %s",url,data,params)
         response = self.session.post(url, data,params)
         return self.handle_response(response)
     def get(self,url,params):
@@ -88,9 +81,8 @@ class TicketBroswer:
 
     def handle_login(self):
         if not self.check_user_is_login():
-            UserLog.print_start_login(user=self)
+            logger.info("Not login ,next login")
             self.login()
-
     def login(self,login_num=0):
         if login_num > self.max_retry_num:
             raise BussinessException(message="Max login retry num exceed")
@@ -136,13 +128,16 @@ class TicketBroswer:
     #检查登录状态
     def check_user_is_login(self):
         response = self.session.post(API_USER_LOGIN_CHECK)
-        print(response.cookies)
         #is_login = response.json().get('data.is_ogin', False) == 'Y'
+        logger.info("Check user login %s", response.text)
         is_login = response.json().get('data.is_login', False) == 'Y'
         if is_login:
-            self.save_user()
+            #self.save_user()
+            logger.info("User has already login to 12306 ")
             #return self.get_user_info()  # 检测应该是不会维持状态，这里再请求下个人中心看有没有用，01-10 看来应该是没用  01-22 有时拿到的状态 是已失效的再加上试试
-
+        else:
+            logger.info("Still no login")
+            pass
         return is_login
 
     def auth_uamtk(self):
@@ -275,6 +270,7 @@ class TicketBroswer:
             self.handle_login(expire=True)
 
     def handle_response(self,response):
+        logger.info("Broswer response %s",response.text)
         return response.json()
     def request_init_dc_page(self):
         """
@@ -308,10 +304,10 @@ class TicketHandler:
     broswer= ''
     api =''
     retry_time=3
-    def __init__(self,info) -> None:
+    def __init__(self,broswer) -> None:
         super().__init__()
         # 从redis 获取登录信息
-        self.broswer = TicketBroswer(info)
+        self.broswer = broswer
         self.api=Request()
 
     # 登录时把user session 放进去
@@ -320,23 +316,33 @@ class TicketHandler:
     @staticmethod
     def getTicketHandlerInstance(userId):
         # 从redis 获取信息
-        ticket_handler = cacheService.get_ticker_handler(userId)
-        if not ticket_handler:
+        ticket_broswer = cacheService.get_ticket_broswer(userId)
+        if not ticket_broswer:
+            logger.info("No ticket broswer ")
             #设置缓存过期时间，如果用户在登录期间,ticket handler 过期，重新new 的时候，拿不到userInfo,从db 获取,db 没有密码
             #不设置过期时间，如果用户没有退出登录，又很长一段时间没有登录,会有大批无用的key
             info=cacheService.get_user_info(userId)
             if not info:
                 info=dbService.getAccount(userId)
                 cacheService.set_user_info(userId,info)
-            ticket_handler=TicketHandler(info)
-            cacheService.set_ticket_handler(userId,ticket_handler)
+            #创建broswer,保存cache
+            ticket_broswer=TicketBroswer(info)
+            cacheService.set_ticket_broswer(userId,ticket_broswer)
+        else:
+            logger.info("Get cache ticket broswer")
+            #缓存存在，检查12306 的登录状态
+            if not ticket_broswer.check_user_is_login():
+                logger.info("Cache ticket broswer 12306 login expire ")
+                ticket_broswer.login()
+                cacheService.set_ticket_broswer(userId,ticket_broswer)
+        ticket_handler=TicketHandler(ticket_broswer)
         return ticket_handler
 
     def get_user_passengers(self):
         passengers=[]
         pageData={"pageIndex": 1,"pageSize": 10}
         result = self.broswer.post(API_PASSENGER_QUERY,data=pageData)
-        print("passengers ",result)
+        logger.info("passengers %s ",result)
         if result.get('data.datas'):
             jsonBody=result.get('data.datas')
             for item in result.get('data.datas'):
@@ -425,7 +431,7 @@ class TicketHandler:
             leftStationCode = info['leftStation']
             arriveStationCode = info['arriveStation']
             trainNum = info['trainNum']
-            logger.info("Query info %s",info)
+            logger.info("Query info %s", info)
         judge_date_legal(leftDate)
         query_time_out = 5
         api_type = ''
@@ -435,7 +441,8 @@ class TicketHandler:
             try:
                 api_type = res.group(1)
             except IndexError as error:
-                print("Error")
+                print("Error",error)
+                raise BussinessException(message=error)
         from py12306.helpers.cdn import Cdn
         url = LEFT_TICKETS.get('url').format(left_date=leftDate, left_station=leftStationCode,
                                              arrive_station=arriveStationCode, type=api_type)
@@ -448,9 +455,13 @@ class TicketHandler:
 
     def order(self,orderInfo,userId):
         user=cacheService.get_user_info(userId)
+        if not user:
+            user=dbService.getAccount(userId)
+            cacheService.set_user_info(userId,user)
         nameArr,jsonBody=self.get_user_passengers()
         passengersQuery=orderInfo['passengers']
         passengersJson=[]
+        #judge_date_legal(orderInfo['left_date'],orderInfo)
         for name in passengersQuery:
             for item in jsonBody:
                 if item['passenger_name']== name:

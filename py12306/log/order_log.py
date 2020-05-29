@@ -59,9 +59,7 @@ class OrderLog(BaseLog):
     @classmethod
     def get_order_success_notification_info(cls, query):
         from py12306.query.job import Job
-        assert isinstance(query, Job)
-        passengers = [passenger.get(
-            'name') + '(' + passenger.get('type_text') + ')' for passenger in query.passengers]
+        passengers = [passenger.get('passenger_name') for passenger in query.passengers]
         return cls.MESSAGE_ORDER_SUCCESS_NOTIFICATION_INFO.format(query.get_info_of_train_number(),
                                                                   query.get_info_of_left_station(),
                                                                   query.get_info_of_train_left_time(),

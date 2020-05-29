@@ -136,6 +136,7 @@ import axios from '@/libs/api.request'
                             this.commitDataForm.secret_str=this.form.secret_str
                             this.commitDataForm.left_station=this.form.left_station
                             this.commitDataForm.arrive_station=this.form.arrive_station
+                            this.commitDataForm.left_time=this.form.left_time
                         }catch(error){
                             console.error(error)
                         }

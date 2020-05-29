@@ -13,6 +13,7 @@ from py12306.helpers.func import singleton
 class Config:
     IS_DEBUG = False
     MAX_BUY_TIME=32
+    MIN_BUY_TIME=30
     USER_ACCOUNTS = []
     # 查询任务
     QUERY_JOBS = []

@@ -30,6 +30,18 @@ class CacheService:
               self.redis.set(TICKET_HANDLER_MAP+":"+userId, pickle.dumps(obj),expire)
       def del_ticket_handler(self,userId):
            self.redis.delete(TICKET_HANDLER_MAP+":"+userId)
+
+      def get_ticket_broswer(self,userId):
+          obj = self.redis.get(TICKET_BROSWER_MAP+":"+userId)
+          if obj:
+            return pickle.loads(obj)
+          return obj
+      def set_ticket_broswer(self,userId,obj):
+          if obj and userId:
+              self.redis.set(TICKET_BROSWER_MAP+":"+userId, pickle.dumps(obj),expire)
+      def del_ticket_broswer(self,userId):
+           self.redis.delete(TICKET_BROSWER_MAP+":"+userId)
+
       def get_user_info(self,userId):
           obj = self.redis.get(USER_INFO_MAP+":"+userId)
           if obj:

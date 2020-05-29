@@ -33,6 +33,8 @@ from py12306.dto.QueryJob import QueryJobGrabbing
 import base64
 import datetime
 from django.db import connection
+from web.logging_factory import getLogger
+logger=getLogger(__name__)
 dbService=DbService()
 # class QueryJobView(View):
 
@@ -168,6 +170,7 @@ def mylogout(request):
     cacheService=CacheService()
     cacheService.del_ticket_handler(getUserId(request))
     cacheService.del_user_info(getUserId(request))
+    cacheService.del_ticket_broswer(getUserId(request))
     logout(request)
     return json_response(data=None)
 def mylogin(request):
@@ -208,28 +211,34 @@ def myregister(request):
                # return redirect("/index") 需要加/ ,url 的名字去查找
                 return json_response(message="创建成功")
         return json_response(code=400,message=error)
+@login_required
 def citylist(request):
     return json_response(data=Station().stations)
+@login_required
 def queryticket(request):
     param=get_param(request)
     data=TicketHandler.query_by_date(param)
     return json_response(data=data)
+@login_required
 def query_passengers(request):
     # handler= UserTicketHandler()
     # handler.getPassengers()
     handler= TicketHandler.getTicketHandlerInstance(getUserId(request))
     data=handler.get_user_passengers()[0]
     return json_response(data=data)
+@login_required
 def order_ticket(request):
     handler= TicketHandler.getTicketHandlerInstance(getUserId(request))
     orderInfo=get_body(request)
     data=handler.order(orderInfo,getUserId(request))
     return json_response()
+@login_required
 def query_price(request):
     handler= TicketHandler.getTicketHandlerInstance(getUserId(request))
     param=get_param(request)
     data=handler.query_price(param)
     return json_response(data=data)
+@login_required
 def query_order(request):
     handler=TicketHandler.getTicketHandlerInstance(getUserId(request))
     param = get_param(request)
