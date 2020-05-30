@@ -6,6 +6,6 @@ After=network.target
 User=celery
 Group=celery
 EnvironmentFile=/opt/ding12306/service/flower.conf
-ExecStart=${FLOWER_BIN} -A ${FLOWER_APP} --address=${FLOWER_ADDRESS} --port=${FLOWER_PORT} --broke=${FLOWER_BROKE} --log-file-prefix=${FLOWER_LOG_FILE_PREFIX}
+ExecStart=/bin/sh -c '${FLOWER_BIN} -A ${FLOWER_APP} --address=${FLOWER_ADDRESS} --port=${FLOWER_PORT} --broke=${FLOWER_BROKE} --log-file-prefix=${FLOWER_LOG_FILE_PREFIX}'
 [Install]
 WantedBy=multi-user.target
