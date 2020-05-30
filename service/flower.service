@@ -3,7 +3,6 @@ Description=Flower Service
 After=network.target
 
 [Service]
-Type=forking
 User=celery
 Group=celery
 EnvironmentFile=/opt/ding12306/service/flower.conf
