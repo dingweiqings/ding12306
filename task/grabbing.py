@@ -5,7 +5,7 @@ import time
 from py12306.exceptions.BussinessException import BussinessException
 from py12306.helpers.QueryTrainConfig import judge_date_legal
 from multiprocessing import Process
-from task.cerely import app
+from task.celery import app
 from py12306.helpers.cache_service import CacheService
 from py12306.helpers.db_service import DbService
 from task.logging_facory import getLogger

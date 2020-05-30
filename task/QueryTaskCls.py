@@ -14,7 +14,7 @@ from py12306.log.user_log import UserLog
 from py12306.order.order import Order
 from py12306.user.user import User
 from py12306.helpers.event import Event
-from task.cerely import app
+from task.celery import app
 
 class Job:
     """

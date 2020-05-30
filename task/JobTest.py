@@ -1,4 +1,4 @@
-from task.cerely import app
+from task.celery import app
 
 
 class JobTest:
