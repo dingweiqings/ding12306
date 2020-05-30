@@ -12,7 +12,7 @@
     <Button @click="handleSearch" class="search-btn" type="primary"><Icon type="search"/>&nbsp;&nbsp;搜索</Button>
   </div>
     <Card>
-      <Table  :data="tableData" :columns="columns" @on-expand="handleExpand">
+      <Table :loading="loading" :data="tableData" :columns="columns" @on-expand="handleExpand">
 
       </Table>
     </Card>
@@ -45,6 +45,7 @@ export default {
       numArr:[],
       priceRow:[],
       rowIndex:0,
+      loading:false,
       columns: [
           { type: 'expand',
                         width: 50,
@@ -317,14 +318,18 @@ export default {
         }
         this.query.leftDate=formateDate(new Date(this.leftDate).getTime(),'YYYY-MM-DD')
         console.log("Format date",this.query.leftDate)
+        this.loading=true
           axios.request({
               url: 'queryticket/ticket/',
               method: 'get',
               params: this.query
           }).then(r=>{
+            this.loading=false
             console.log("R",r)
             this.tableData=r.data.data
             console.log("table data",this.tableData)
+          }).catch(e=>{
+            this.loading=false
           })
       },
       showOrderModal(){

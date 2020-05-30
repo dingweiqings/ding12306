@@ -47,6 +47,8 @@ class Request(HTMLSession):
                 try:
                     api_type = res.group(1)
                     logger.info("Api type %s", api_type)
+                    #应该是自动的
+                    #api.cookies.update(response.cookies)
                 except IndexError as error:
                     print("Error", error)
                     raise BussinessException(message=error)

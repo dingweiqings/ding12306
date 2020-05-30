@@ -6,13 +6,13 @@ from requests_html import HTMLSession, HTMLResponse
 from py12306.helpers.cache_service import CacheService
 from py12306.helpers.api import API_TICKET_INDEX
 requests.packages.urllib3.disable_warnings()
-
+cacheService=CacheService()
 #使用连接池优化,工厂模式
 class Request(HTMLSession):
     """
     请求处理类
     """
-    cache=''
+
     def __init__(self, userId):
         self.cache=CacheService()
         #缓存没有

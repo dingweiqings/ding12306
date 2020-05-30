@@ -72,7 +72,7 @@ class TicketBroswer:
     def get(self,url,params):
         # 处理login 和cookie
         #self.handle_login()
-        print(url, params)
+        logger.info("%s %s",url, params)
         response = self.session.get(url,params=params)
         return self.handle_response(response)
     # def init_cookies
@@ -270,6 +270,11 @@ class TicketBroswer:
             self.handle_login(expire=True)
 
     def handle_response(self,response):
+        #简单判断如果是302
+        if response.status_code == 302:
+            logger.info("Not login ,12306 redirect")
+            self.handle_login()
+            #是否放入缓存
         logger.info("Broswer response %s",response.text)
         return response.json()
     def request_init_dc_page(self):
@@ -327,14 +332,15 @@ class TicketHandler:
                 cacheService.set_user_info(userId,info)
             #创建broswer,保存cache
             ticket_broswer=TicketBroswer(info)
+            ticket_broswer.login()
             cacheService.set_ticket_broswer(userId,ticket_broswer)
-        else:
-            logger.info("Get cache ticket broswer")
-            #缓存存在，检查12306 的登录状态
-            if not ticket_broswer.check_user_is_login():
-                logger.info("Cache ticket broswer 12306 login expire ")
-                ticket_broswer.login()
-                cacheService.set_ticket_broswer(userId,ticket_broswer)
+        # else:
+        #     logger.info("Get cache ticket broswer")
+        #     #缓存存在，检查12306 的登录状态
+        #     if not ticket_broswer.check_user_is_login():
+        #         logger.info("Cache ticket broswer 12306 login expire ")
+        #         ticket_broswer.login()
+        #         cacheService.set_ticket_broswer(userId,ticket_broswer)
         ticket_handler=TicketHandler(ticket_broswer)
         return ticket_handler
 

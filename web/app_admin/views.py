@@ -34,6 +34,7 @@ import base64
 import datetime
 from django.db import connection
 from web.logging_factory import getLogger
+from task.grabbing import grabbing
 logger=getLogger(__name__)
 dbService=DbService()
 # class QueryJobView(View):
@@ -69,6 +70,14 @@ class QueryJobView(viewsets.ModelViewSet):
         params=request.query_params
         self.kwargs=params
         obj=super().update(request,*args,partial=True)
+        queryJob=QueryJob.objects.get(pk=params['pk'])
+        dictJob=queryJob.__dict__
+        del dictJob['_state']
+        del dictJob['updater']
+        del dictJob['updatetime']
+        del dictJob['creater']
+        del dictJob['createtime']
+        grabbing.delay(QueryJobGrabbing(**dictJob))
         return obj
 
 class WaitUserView(viewsets.ModelViewSet):

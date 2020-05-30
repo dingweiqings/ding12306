@@ -1,0 +1,12 @@
+[Unit]
+Description=Flower Service
+After=network.target
+
+[Service]
+Type=forking
+User=celery
+Group=celery
+EnvironmentFile=/opt/ding12306/service/flower.conf
+ExecStart=${FLOWER_BIN} -A ${APP} --address=${FLOWER_ADDRESS} --port=${FLOWER_PORT} --broke=${FLOWER_BROKE} --log-file-prefix=${FLOWER_LOG_FILE_PREFIX}
+[Install]
+WantedBy=multi-user.target
