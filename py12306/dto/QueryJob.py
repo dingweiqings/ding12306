@@ -25,4 +25,18 @@ class QueryJobGrabbing:
             self.train_number=train_number
             self.state=state
             self.count=count
-
+class WaitUser:
+    id =''
+    job_key =''
+    account_key = ''
+    passengers = ''
+    allow_less_member = ''
+    seats = ''
+    def __init__(self,id,job_key,account_key,passengers,allow_less_member,seats) -> None:
+        super().__init__()
+        self.id=id
+        self.job_key=job_key
+        self.account_key=account_key
+        self.passengers=passengers
+        self.allow_less_member=allow_less_member
+        self.seats=seats

@@ -37,6 +37,7 @@ from web.logging_factory import getLogger
 from task.grabbing import grabbing
 logger=getLogger(__name__)
 dbService=DbService()
+cacheService=CacheService()
 # class QueryJobView(View):
 
 #     @method_decorator(login_required)
@@ -77,7 +78,8 @@ class QueryJobView(viewsets.ModelViewSet):
         del dictJob['updatetime']
         del dictJob['creater']
         del dictJob['createtime']
-        grabbing.delay(QueryJobGrabbing(**dictJob))
+        task_id=grabbing.delay(QueryJobGrabbing(**dictJob))
+        cacheService.save_task(task_id)
         return obj
 
 class WaitUserView(viewsets.ModelViewSet):

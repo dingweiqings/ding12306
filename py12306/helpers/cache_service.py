@@ -72,5 +72,13 @@ class CacheService:
           obj=self.redis.get(QUERY_JOB_MAP + ":" + id)
           if obj:
               return pickle.loads(obj)
+      def save_task(self,task):
+          if task:
+              self.redis.set(TASK_MAP+":"+task.id,"NOT_ASSIGN")
+      def del_task(self,id):
+           self.redis.delete(TASK_MAP+":"+id)
+      def get_task(self, id):
+          obj=self.redis.get(TASK_MAP + ":" + id)
+          return obj
 
 

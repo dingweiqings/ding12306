@@ -2,6 +2,7 @@ from celery import Celery
 from celery.schedules import crontab
 from datetime import timedelta
 from py12306.dto import *
+import re
 # 消息中间件，密码是你redis的密码
 # broker='redis://:123456@127.0.0.1:6379/2' 密码123456
 broker = 'amqp://12306:12306@10.10.10.76:5672/my_vhost'  # 无密码
@@ -24,7 +25,11 @@ CELERY_TASK_SERIALIZER = 'pickle'
 app.conf.task_serializer=CELERY_TASK_SERIALIZER
 app.conf.accept_content=CELERY_ACCEPT_CONTENT
 app.conf.result_accept_content=CELERY_RESULT_SERIALIZER
-
+task_routes = ([
+    ('task.order', {'queue': 'order'}),
+    ('task.grabbing', {'queue': 'grabbing'})
+],)
+app.conf.task_routes=task_routes
 # 定时执行
 # app.conf.beat_schedule = {
 #     # 名字随意命名

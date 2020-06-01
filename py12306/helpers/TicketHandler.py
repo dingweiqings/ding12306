@@ -470,7 +470,7 @@ class TicketHandler:
         nameArr,jsonBody=self.get_user_passengers()
         passengersQuery=orderInfo['passengers']
         passengersJson=[]
-        #judge_date_legal(orderInfo['left_date'],orderInfo)
+        judge_date_legal(orderInfo['left_date'],orderInfo)
         for name in passengersQuery:
             for item in jsonBody:
                 if item['passenger_name']== name:
