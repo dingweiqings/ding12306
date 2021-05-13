@@ -60,8 +60,8 @@ class Config:
     NODE_NAME = ''
     REDIS_HOST = '10.10.10.201'
     REDIS_PORT = '6379'
-    REDIS_DB='2'
-    REDIS_PASSWORD = ''
+    REDIS_DB='0'
+    REDIS_PASSWORD = '123456'
 
     # 钉钉配置
     DINGTALK_ENABLED = 0
@@ -101,8 +101,8 @@ class Config:
     CDN_ENABLED_AVAILABLE_ITEM_FILE = QUERY_DATA_DIR + 'available.json'
 
     CACHE_RAIL_ID_ENABLED = 1
-    RAIL_EXPIRATION = ''
-    RAIL_DEVICEID = ''
+    RAIL_EXPIRATION = '1593890700767'
+    RAIL_DEVICEID = 'YCr8lRgNXhLUyz8bzclYr7zqEyaEtPnXZjFN_hQ3v_mdSWIw5BooCzRH3kyUcGEVc17MihedIScyNtalTj3dlm9Npwe9UYcVxexl0QYksPDUXKJzNoxDZkzEyUnnINv8iLSPNHr_IS8AwUoqSwdiBwQOQUtcz5a2'
 
     # Default time out
     TIME_OUT_OF_REQUEST = 5

@@ -49,9 +49,82 @@ INDEX_TIME=10
 INDEX_ARRIVE_AT_CURRENT_DAY=11
 
 
+def handle_response_train_ticket(response, trainNum):
+    """
+    错误判断
+    余票判断
+    小黑屋判断
+    座位判断
+    乘车人判断
+    :param result:
+    :return:
+    """
+    results = get_results(response)
+    resultArr = []
+    if not results:
+        print(results)
+        return []
+    for result in results:
+        ticket_info = result.split('|')
+        num = get_info_of_train_number(ticket_info)
+        if trainNum and num != trainNum:
+            continue
+        qtr = QueryTicketResult()
+        qtr.ops = ticket_info[1]
+        qtr.secret_str = ticket_info[0]
+        if ticket_info[1] != '预订':  # 列车停运
+            qtr.no = get_info_of_train_no(ticket_info)
+            qtr.num = get_info_of_train_number(ticket_info)
+            qtr.seat_types = "-"
+            qtr.from_station_no = "-"
+            qtr.to_station_no = "-"
+            qtr.left_station = get_info_of_left_station(ticket_info)
+            qtr.arrive_station = get_info_of_arrive_station(ticket_info)
+            qtr.left_date = "-"
+            qtr.left_time = "-"
+            qtr.arrive_time = "-"
+            qtr.time = "-"
+            qtr.arrive_at_current_day = "-"
+            qtr.bussiness_seat = "-"
+            qtr.one_seat = "-"
+            qtr.two_seat = "-"
+            qtr.high_soft_sleeper = "-"
+            qtr.soft_sleeper = "-"
+            qtr.dong_sleeper = "-"
+            qtr.hard_sleepr = "-"
+            qtr.soft_seat = "-"
+            qtr.hard_seat = "-"
+            qtr.no_seat = "-"
+            qtr.other = "-"
+        else:
+            qtr.no = get_info_of_train_no(ticket_info)
+            qtr.num = get_info_of_train_number(ticket_info)
+            qtr.seat_types = get_info_of_seat_type(ticket_info)
+            qtr.from_station_no = get_info_of_from_station_no(ticket_info)
+            qtr.to_station_no = get_info_of_to_station_no(ticket_info)
+            qtr.left_station = get_info_of_left_station(ticket_info)
+            qtr.arrive_station = get_info_of_arrive_station(ticket_info)
+            qtr.left_date = get_info_of_left_date(ticket_info)
+            qtr.left_time = get_info_of_train_left_time(ticket_info)
+            qtr.arrive_time = get_info_of_train_arrive_time(ticket_info)
+            qtr.time = get_info_of_train_time(ticket_info)
+            qtr.arrive_at_current_day = get_info_of_arrive_at_current_day(ticket_info)
+            qtr.bussiness_seat = get_info_of_bussiness_seat(ticket_info)
+            qtr.one_seat = get_info_of_one_seat(ticket_info)
+            qtr.two_seat = get_info_of_two_seat(ticket_info)
+            qtr.high_soft_sleeper = get_info_of_train_high_soft_sleeper(ticket_info)
+            qtr.soft_sleeper = get_info_of_train_soft_sleeper(ticket_info)
+            qtr.dong_sleeper = get_info_of_dong_sleeper(ticket_info)
+            qtr.hard_sleeper = get_info_of_hard_sleeper(ticket_info)
+            qtr.soft_seat = get_info_of_soft_seat(ticket_info)
+            qtr.hard_seat = get_info_of_hard_seat(ticket_info)
+            qtr.no_seat = get_info_of_no_seat(ticket_info)
+            qtr.other = get_info_of_other(ticket_info)
+        resultArr.append(qtr)
+        # 处理返回的ticket_info
+    return resultArr
 
-
-def handle_response_query_date(response, trainNum):
+def handle_response_query_date(info_str):
         """
         错误判断
         余票判断
@@ -61,73 +134,62 @@ def handle_response_query_date(response, trainNum):
         :param result:
         :return:
         """
-        results = get_results(response)
-        resultArr = []
-        if not results:
-            print(results)
-            return []
-        for result in results:
-            ticket_info = result.split('|')
-            num = get_info_of_train_number(ticket_info)
-            if trainNum and num != trainNum:
-                continue
-            qtr = QueryTicketResult()
-            qtr.ops = ticket_info[1]
-            qtr.secret_str=ticket_info[0]
-            if ticket_info[1] != '预订':#列车停运
-                qtr.no = get_info_of_train_no(ticket_info)
-                qtr.num = get_info_of_train_number(ticket_info)
-                qtr.seat_types = "-"
-                qtr.from_station_no = "-"
-                qtr.to_station_no = "-"
-                qtr.left_station = get_info_of_left_station(ticket_info)
-                qtr.arrive_station = get_info_of_arrive_station(ticket_info)
-                qtr.left_date = "-"
-                qtr.left_time = "-"
-                qtr.arrive_time = "-"
-                qtr.time = "-"
-                qtr.arrive_at_current_day = "-"
-                qtr.bussiness_seat = "-"
-                qtr.one_seat = "-"
-                qtr.two_seat = "-"
-                qtr.high_soft_sleeper = "-"
-                qtr.soft_sleeper = "-"
-                qtr.dong_sleeper = "-"
-                qtr.hard_sleepr = "-"
-                qtr.soft_seat = "-"
-                qtr.hard_seat = "-"
-                qtr.no_seat = "-"
-                qtr.other = "-"
-            else:
-                qtr.no = get_info_of_train_no(ticket_info)
-                qtr.num = get_info_of_train_number(ticket_info)
-                qtr.seat_types = get_info_of_seat_type(ticket_info)
-                qtr.from_station_no = get_info_of_from_station_no(ticket_info)
-                qtr.to_station_no = get_info_of_to_station_no(ticket_info)
-                qtr.left_station = get_info_of_left_station(ticket_info)
-                qtr.arrive_station = get_info_of_arrive_station(ticket_info)
-                qtr.left_date = get_info_of_left_date(ticket_info)
-                qtr.left_time = get_info_of_train_left_time(ticket_info)
-                qtr.arrive_time = get_info_of_train_arrive_time(ticket_info)
-                qtr.time = get_info_of_train_time(ticket_info)
-                qtr.arrive_at_current_day = get_info_of_arrive_at_current_day(ticket_info)
-                qtr.bussiness_seat = get_info_of_bussiness_seat(ticket_info)
-                qtr.one_seat = get_info_of_one_seat(ticket_info)
-                qtr.two_seat = get_info_of_two_seat(ticket_info)
-                qtr.high_soft_sleeper = get_info_of_train_high_soft_sleeper(ticket_info)
-                qtr.soft_sleeper = get_info_of_train_soft_sleeper(ticket_info)
-                qtr.dong_sleeper = get_info_of_dong_sleeper(ticket_info)
-                qtr.hard_sleeper = get_info_of_hard_sleeper(ticket_info)
-                qtr.soft_seat = get_info_of_soft_seat(ticket_info)
-                qtr.hard_seat = get_info_of_hard_seat(ticket_info)
-                qtr.no_seat = get_info_of_no_seat(ticket_info)
-                qtr.other = get_info_of_other(ticket_info)
-            resultArr.append(qtr)
-            # 处理返回的ticket_info
-        return resultArr
+        ticket_info = info_str.split('|')
+        qtr = QueryTicketResult()
+        qtr.ops = ticket_info[1]
+        qtr.secret_str=ticket_info[0]
+        if ticket_info[1] != '预订':#列车停运
+            qtr.no = get_info_of_train_no(ticket_info)
+            qtr.num = get_info_of_train_number(ticket_info)
+            qtr.seat_types = "-"
+            qtr.from_station_no = "-"
+            qtr.to_station_no = "-"
+            qtr.left_station = get_info_of_left_station(ticket_info)
+            qtr.arrive_station = get_info_of_arrive_station(ticket_info)
+            qtr.left_date = "-"
+            qtr.left_time = "-"
+            qtr.arrive_time = "-"
+            qtr.time = "-"
+            qtr.arrive_at_current_day = "-"
+            qtr.bussiness_seat = "-"
+            qtr.one_seat = "-"
+            qtr.two_seat = "-"
+            qtr.high_soft_sleeper = "-"
+            qtr.soft_sleeper = "-"
+            qtr.dong_sleeper = "-"
+            qtr.hard_sleepr = "-"
+            qtr.soft_seat = "-"
+            qtr.hard_seat = "-"
+            qtr.no_seat = "-"
+            qtr.other = "-"
+        else:
+            qtr.no = get_info_of_train_no(ticket_info)
+            qtr.num = get_info_of_train_number(ticket_info)
+            qtr.seat_types = get_info_of_seat_type(ticket_info)
+            qtr.from_station_no = get_info_of_from_station_no(ticket_info)
+            qtr.to_station_no = get_info_of_to_station_no(ticket_info)
+            qtr.left_station = get_info_of_left_station(ticket_info)
+            qtr.arrive_station = get_info_of_arrive_station(ticket_info)
+            qtr.left_date = get_info_of_left_date(ticket_info)
+            qtr.left_time = get_info_of_train_left_time(ticket_info)
+            qtr.arrive_time = get_info_of_train_arrive_time(ticket_info)
+            qtr.time = get_info_of_train_time(ticket_info)
+            qtr.arrive_at_current_day = get_info_of_arrive_at_current_day(ticket_info)
+            qtr.bussiness_seat = get_info_of_bussiness_seat(ticket_info)
+            qtr.one_seat = get_info_of_one_seat(ticket_info)
+            qtr.two_seat = get_info_of_two_seat(ticket_info)
+            qtr.high_soft_sleeper = get_info_of_train_high_soft_sleeper(ticket_info)
+            qtr.soft_sleeper = get_info_of_train_soft_sleeper(ticket_info)
+            qtr.dong_sleeper = get_info_of_dong_sleeper(ticket_info)
+            qtr.hard_sleeper = get_info_of_hard_sleeper(ticket_info)
+            qtr.soft_seat = get_info_of_soft_seat(ticket_info)
+            qtr.hard_seat = get_info_of_hard_seat(ticket_info)
+            qtr.no_seat = get_info_of_no_seat(ticket_info)
+            qtr.other = get_info_of_other(ticket_info)
+        return qtr
 
 def judge_date_legal(date, train_info=None):
-  date_now = datetime.datetime.now()
+  date_now = datetime.datetime.strptime(datetime.datetime.today().strftime("%Y-%m-%d"), "%Y-%m-%d")
   date_query = datetime.datetime.strptime(str(date), "%Y-%m-%d")
   diff = (date_query - date_now).days
   # 查询日期是过去的时间

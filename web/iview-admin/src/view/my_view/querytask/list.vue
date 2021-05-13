@@ -71,13 +71,29 @@ export default {
             if(params.row.state==0){
               span_text='运行中'
             }else if(params.row.state==1){
+              span_text="下单中"
+            }else if(params.row.state==3){
               span_text="结束"
+            }else if(params.row.state==2){
+              span_text='今日取消次数过多'
             }
             return h('div', [
                           h('Span', span_text),
                     ]);
         }
        },
+        { title: '结果', key: 'result' ,
+           render: (h, params) => {
+            if(params.row.result){
+                return  h('Span', '成功')
+            } else{
+              return  h('Span', '失败')
+            }
+            
+        }
+        
+        },
+        { title: '原因', key: 'reason' },
         {
           title: '操作',
           key: 'handle',

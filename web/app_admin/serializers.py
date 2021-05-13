@@ -7,7 +7,7 @@ class WaitUserSerializer(serializers.ModelSerializer):
         model = WaitUser
         fields = ['id', 'name', 'left_date', 'left_station', 'passengers',
                   'allow_less_member','seats','train_number','arrive_station','state',
-                  'createtime', 'updatetime','creater','updater']
+                  'createtime', 'updatetime','creater','updater','result','reason']
 class QueryJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = QueryJob

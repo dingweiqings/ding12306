@@ -114,7 +114,7 @@ export default {
           filterMethod (value, row) {
               console.log("Value ",value)
               let starttime=row.left_time.split(":")[0]
-              return starttime <value && starttime >value-6
+              return starttime <value && starttime >=value-6
           }
                         },
         { title: '到达时间', key: 'arrive_time',
@@ -140,8 +140,8 @@ export default {
           filterMultiple: false,
           filterMethod (value, row) {
               console.log("Value ",value)
-              let starttime=row.left_time.split(":")[0]
-              return starttime <value && starttime >value-6
+              let starttime=row.arrive_time.split(":")[0]
+              return starttime <value && starttime >=value-6
           }
         
         },
@@ -181,19 +181,15 @@ export default {
         {
           title: '操作',
           key: 'handle',
+          width:200,
           render: (h, params) => {
             if(params.row.ops==='预订'){
               let canOrder=hasLeftTicket(params.row)
               let color=canOrder?'green':'red'
-              return h('div', [
-                h('Icon', {
-                  style: {
-                      cursor:'pointer',
-                      'background-color': color
-                    },
+              return h('div',[
+                h('Button', {
                     props: {
-                      type:'md-hammer',
-                      size: 30
+                      type:'success'
                     },
                   on: {
                     'click': () => {
@@ -209,24 +205,42 @@ export default {
                       console.log("Assign success ",this.trainInfo)
                       this.seatArr=getSeatArr(params.row)
                       console.log("seat arr",this.seatArr)
-                      if(canOrder){
-                          this.showOrderModal()
-                      }else{
-                          console.log("NO ticket")
-                          this.numArr=[]
-                          this.trainInfo.left_date=this.leftDate
-                          this.tableData.forEach((e,i)=>{
-                              if(e.ops==='预订' ){
-                               this.numArr.push({num:e.num,left_time:e.left_time,arrive_time:e.arrive_time,time:e.time,
-                               left_station:e.left_station,arrive_station:e.arrive_station})
-                              }
-                          })
-                          console.log("this.numArr",this.numArr)
-                          this.showGrabbingMethod()
-                      }
+                      this.showOrderModal()
+                  }
+                  }
+                },'购买'),
+                h('Button', {
+                    props: {
+                      type:'warning'
+                    },
+                  on: {
+                    'click': () => {
+                      console.log("Abc ",params.row)
+                        let index=-1
+                        this.tableData.forEach((e,i)=>{
+                          if(e.num===params.row.num){
+                            index=i
+                          }
+                        })
+                      Object.assign(this.trainInfo,params.row)
+                      this.trainInfo.secret_str=this.tableData[index].secret_str
+                      console.log("Assign success ",this.trainInfo)
+                      this.seatArr=getSeatArr(params.row)
+                      console.log("seat arr",this.seatArr)
+                      console.log("NO ticket")
+                      this.numArr=[]
+                      this.trainInfo.left_date=this.leftDate
+                      this.tableData.forEach((e,i)=>{
+                          if(e.ops==='预订' ){
+                            this.numArr.push({num:e.num,left_time:e.left_time,arrive_time:e.arrive_time,time:e.time,
+                            left_station:e.left_station,arrive_station:e.arrive_station})
+                          }
+                      })
+                      console.log("this.numArr",this.numArr)
+                      this.showGrabbingMethod()
                     }
                   }
-                })
+                },'抢票')
               ]);
             }else{
                 return h('div', [
@@ -247,8 +261,8 @@ export default {
       passengersArr:[],
       query:{
         page:1,
-        leftStation:'HFH',
-        arriveStation:'SZH',
+        leftStation:'SZH',
+        arriveStation:'HFH',
         page_size:10,
         searchValue:'',
         trainNum:'',

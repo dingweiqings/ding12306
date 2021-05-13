@@ -49,10 +49,11 @@ from enum import Enum
 #     },
 
 STATE_CHOICES=((0, 'NEW'),(1, 'START'), (2,'RUNNING'), (3,'BLOCK'), (4,'END'))
-WAIT_STATE_CHOICES=((0,'RUNNING'),(1,'END'))
+WAIT_STATE_CHOICES=((0,'RUNNING'),(1,'ORDERING'),(2,'END'))
 class WaitUserState(Enum):
-       RUNNING=2
-       END=4
+       RUNNING=0
+       ORDERING=1
+       END=2
 class QueryJobState(Enum):
        NEW=0
        START= 1
@@ -102,3 +103,6 @@ class WaitUser(models.Model,ModelMixin):
         arrive_station=models.CharField(max_length=100, default='')#以-分割，多组以分号分割
         train_number=models.CharField(max_length=50,null=True,blank=True)
         createtime=models.DateTimeField(default=timezone.now)
+        result=models.BooleanField(default=False)
+        reason=models.CharField(default='未开始',max_length=50)
+        uid=models.CharField(default='',max_length=50)

@@ -82,19 +82,19 @@ export default [
   },
   {
     path: '/queryjob',
-    name: '抢票进程',
+    name: '抢票机器人',
     component: Main,
     meta: {
       hideInBread: false,
       hideInMenu: false,
-      title: '抢票进程'
+      title: '抢票机器人'
     },
     children: [
       {
         path: 'queryjob_page',
-        name: '抢票进程',
+        name: '抢票机器人',
         meta: {
-          title: '抢票进程',
+          title: '抢票机器人',
           hideInMenu: false
         },
         component: () => import('@/view/my_view/queryjob/list.vue'),

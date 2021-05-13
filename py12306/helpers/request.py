@@ -53,6 +53,9 @@ class Request(HTMLSession):
                     print("Error", error)
                     raise BussinessException(message=error)
             cacheService.set_api_request(jobId,api)
+        proxy=cacheService.get_useful_proxy()
+        api.proxies=proxy
+        logger.info("Use Proxy %s" ,proxy)
         return api
     @staticmethod
     def _handle_response(response, **kwargs) -> HTMLResponse:

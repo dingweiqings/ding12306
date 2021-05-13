@@ -1,4 +1,4 @@
-from task.celery import app
+from task.task_celery import app
 from py12306.helpers.TicketHandler import TicketHandler
 from py12306.helpers.cache_service import CacheService
 from py12306.helpers.db_service import DbService

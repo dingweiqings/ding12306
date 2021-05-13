@@ -1,5 +1,5 @@
 from celery.result import AsyncResult
-from .celery import app
+from .task_celery import app
 
 
 def check_result(task_id):

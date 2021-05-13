@@ -39,6 +39,7 @@ class TicketBroswer:
     cookie = False
     local = threading.local()
     cacheService=''
+    proxy=''
     def __init__(self, info):
         self.init_data(info)
 
@@ -49,7 +50,8 @@ class TicketBroswer:
         self.user_name = info.username
         self.password = info.password_ticket
         #self.handle_login()
-
+    def set_proxy(self,proxy):
+        self.session.proxies=proxy
     # def getUserLoginDTO(self):
     #     return {"username": "D13340124151148","password": "pa279548ss"}
     def postHtml(self,url,data,params=None):
@@ -98,7 +100,11 @@ class TicketBroswer:
         }
         answer = AuthCode.get_auth_code(self.session)
         data['answer'] = answer
-        self.request_device_id()
+        get_device_id=self.request_device_id()
+        if not get_device_id:
+            logger.error("Get device id error")
+            raise BussinessException("Get device id error")
+            return
         response = self.session.post(API_BASE_LOGIN.get('url'), data)
         result = response.json()
         if result.get('result_code') == 0:  # 登录成功
@@ -124,6 +130,7 @@ class TicketBroswer:
             UserLog.add_quick_log(
                 UserLog.MESSAGE_LOGIN_FAIL.format(result.get('result_message', result.get('message','Response json body is empty',
                                                                                  CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR)))).flush()
+            time.sleep(5)
             self.login(login_num=login_num)
     #检查登录状态
     def check_user_is_login(self):
@@ -164,31 +171,37 @@ class TicketBroswer:
         获取加密后的浏览器特征 ID
         :return:
         """
-        response = self.session.get(API_GET_BROWSER_DEVICE_ID)
-        if response.status_code == 200:
-            try:
-                result = json.loads(response.text)
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
-                }
-                from base64 import b64decode
-                self.session.headers.update(headers)
-                response = self.session.get(b64decode(result['id']).decode())
-                if response.text.find('callbackFunction') >= 0:
-                    result = response.text[18:-2]
-                result = json.loads(result)
-                if  Config().is_cache_rail_id_enabled():
-                   self.session.cookies.update({
-                       'RAIL_EXPIRATION': result.get('exp'),
-                       'RAIL_DEVICEID': result.get('dfp'),
-                   })
-                else:
-                   self.session.cookies.update({
-                       'RAIL_EXPIRATION': Config().RAIL_EXPIRATION,
-                       'RAIL_DEVICEID': Config().RAIL_DEVICEID,
-                   })
-            except:
-                return False
+        # url='https://kyfw.12306.cn/otn/HttpZF/logdevice?algID=ttnV7J9X8d&hashCode=7wpioe759TekNxyA_tsUBxJOG_DE3Obxm6UaZRN4D4I&FMQw=0&q4f3=zh&VySQ=FGHnwkrS6soSWWnpgIeWTEaUwBal1rZV&VPIf=1&custID=133&VEek=unknown&dzuS=0&yD16=0&EOQP=4902a61a235fbb59700072139347967d&jp76=52d67b2a5aa5e031084733d5006cc664&hAqN=Win32&platform=WEB&ks0Q=d22ca0b81584fbea62237b14bd04c866&TeRS=1040x1920&tOHY=24xx1080x1920&Fvje=i1l1o1s1&q5aJ=-8&wNLf=99115dfb07133750ba677d055874de87&0aew=Mozilla/5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/83.0.4103.106%20Safari/537.36&E3gR=e3b2841a9d3f3d7b7f8679b35bd492a9&timestamp=1592555050344'
+        # response = self.session.get(url)
+        # if response.status_code == 200:
+        #     try:
+        #         headers = {
+        #             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+        #         }
+        #         from base64 import b64decode
+        #         self.session.headers.update(headers)
+        #        # response = self.session.get(b64decode(result['id']).decode())
+        #         if response.text.find('callbackFunction') >= 0:
+        #             result_text = response.text[18:-2]
+        #             result = json.loads(result_text)
+        #             if  Config().is_cache_rail_id_enabled():
+        #                self.session.cookies.update({
+        #                    'RAIL_EXPIRATION': result.get('exp'),
+        #                    'RAIL_DEVICEID': result.get('dfp'),
+        #                })
+        #             else:
+        #                self.session.cookies.update({
+        #                    'RAIL_EXPIRATION': Config().RAIL_EXPIRATION,
+        #                    'RAIL_DEVICEID': Config().RAIL_DEVICEID,
+        #                })
+        #             return True
+        #     except:
+        #         return False
+        self.session.cookies.update({
+           'RAIL_EXPIRATION': Config().RAIL_EXPIRATION,
+           'RAIL_DEVICEID': Config().RAIL_DEVICEID,
+        })
+        return True
 
     def login_did_success(self):
         """
@@ -332,36 +345,45 @@ class TicketHandler:
                 cacheService.set_user_info(userId,info)
             #创建broswer,保存cache
             ticket_broswer=TicketBroswer(info)
-            ticket_broswer.login()
+            #获取cookie
+            ticket_broswer.set_proxy(cacheService.get_useful_proxy())
+            ticket_broswer.handle_login()
             cacheService.set_ticket_broswer(userId,ticket_broswer)
-        # else:
-        #     logger.info("Get cache ticket broswer")
-        #     #缓存存在，检查12306 的登录状态
-        #     if not ticket_broswer.check_user_is_login():
-        #         logger.info("Cache ticket broswer 12306 login expire ")
-        #         ticket_broswer.login()
-        #         cacheService.set_ticket_broswer(userId,ticket_broswer)
+        else:
+            logger.info("Get cache ticket broswer")
+            #缓存存在，检查12306 的登录状态
+            if not ticket_broswer.check_user_is_login():
+                logger.info("Cache ticket broswer 12306 login expire ")
+                ticket_broswer.login()
+                cacheService.set_ticket_broswer(userId,ticket_broswer)
+            ticket_broswer.set_proxy(cacheService.get_useful_proxy())
+            logger.info("Ticket broswer %s",ticket_broswer.session.proxies)
+      #  保存session,cookies
+   #     ticket_broswer.get(API_TICKET_INDEX)
         ticket_handler=TicketHandler(ticket_broswer)
         return ticket_handler
 
-    def get_user_passengers(self):
-        passengers=[]
-        pageData={"pageIndex": 1,"pageSize": 10}
-        result = self.broswer.post(API_PASSENGER_QUERY,data=pageData)
-        logger.info("passengers %s ",result)
-        if result.get('data.datas'):
-            jsonBody=result.get('data.datas')
-            for item in result.get('data.datas'):
-                passengers.append({"name": item['passenger_name']})
-            return passengers,jsonBody
-            # 将乘客写入到文件
-            # with open(Config().USER_PASSENGERS_FILE % self.user_name, 'w', encoding='utf-8') as f:
-            #     f.write(json.dumps(self.passengers, indent=4, ensure_ascii=False))
-        else:
-            UserLog.add_quick_log(
-                UserLog.MESSAGE_GET_USER_PASSENGERS_FAIL.format(
-                    result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR), self.retry_time)).flush()
-            raise BussinessException(500,"Get passengers error")
+    def get_user_passengers(self,retry=0):
+        if retry < self.retry_time:
+            passengers=[]
+            pageData={"pageIndex": 1,"pageSize": 10}
+            result = self.broswer.post(API_PASSENGER_QUERY,data=pageData)
+            #logger.info("passengers %s ",result)
+            if result.get('data.datas'):
+                jsonBody=result.get('data.datas')
+                for item in result.get('data.datas'):
+                    passengers.append({"name": item['passenger_name']})
+                return passengers,jsonBody
+                # 将乘客写入到文件
+                # with open(Config().USER_PASSENGERS_FILE % self.user_name, 'w', encoding='utf-8') as f:
+                #     f.write(json.dumps(self.passengers, indent=4, ensure_ascii=False))
+            else:
+                UserLog.add_quick_log(
+                    UserLog.MESSAGE_GET_USER_PASSENGERS_FAIL.format(
+                        result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR), 5)).flush()
+                time.sleep(5)
+                self.get_user_passengers(retry=retry+1)
+        raise BussinessException(500,"Get passengers error")
     def get_passengers_by_members(self, members):
         """
         获取格式化后的乘客信息
@@ -460,27 +482,36 @@ class TicketHandler:
             return api.cdn_request(url, timeout=query_time_out, allow_redirects=False)
         is_cdn = False
         response = api.get(url, timeout=query_time_out, allow_redirects=False)
-        return handle_response_query_date(response, trainNum)
+        return handle_response_train_ticket(response,trainNum)
 
     def order(self,orderInfo,userId):
-        user=cacheService.get_user_info(userId)
-        if not user:
-            user=dbService.getAccount(userId)
-            cacheService.set_user_info(userId,user)
-        nameArr,jsonBody=self.get_user_passengers()
-        passengersQuery=orderInfo['passengers']
-        passengersJson=[]
-        judge_date_legal(orderInfo['left_date'],orderInfo)
-        for name in passengersQuery:
-            for item in jsonBody:
-                if item['passenger_name']== name:
-                    passengersJson.append(item)
-        orderInfo['passengers']=passengersJson
-        current_seat,current_order_seat = self.get_seat(orderInfo['seat'])
-        orderInfo['current_seat']=current_seat
-        orderInfo['current_order_seat']=current_order_seat
-        order=Order(self.broswer,orderInfo,user)
-        order.order()
+        order_result=False
+        try:
+            user=cacheService.get_user_info(userId)
+            if not user:
+                user=dbService.getAccount(userId)
+                cacheService.set_user_info(userId,user)
+            #如果proxy不稳定，这行会报异常
+            nameArr,jsonBody=self.get_user_passengers()
+            passengersQuery=orderInfo['passengers']
+            passengersJson=[]
+            judge_date_legal(orderInfo['left_date'],orderInfo)
+            for name in passengersQuery:
+                for item in jsonBody:
+                    if item['passenger_name']== name:
+                        passengersJson.append(item)
+            orderInfo['passengers']=passengersJson
+            current_seat,current_order_seat = self.get_seat(orderInfo['seat'])
+            orderInfo['current_seat']=current_seat
+            orderInfo['current_order_seat']=current_order_seat
+            order=Order(self.broswer,orderInfo,user)
+            order_result=order.order()
+        except Exception as e:
+            logger.exception("Order occur exception %s ",e)
+            if isinstance(e,BussinessException):
+                raise e
+        logger.info("Ticket handler %s",order_result)
+        return order_result
 
     def get_seat(self, seat):
         current_seat = SeatType.dicts.get(seat)

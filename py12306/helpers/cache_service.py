@@ -2,24 +2,23 @@ import redis
 from py12306.config import Config
 from py12306.cache_config import *
 import pickle
+import json
 expire=30*60
+import requests
+import random
 class CacheService:
       redis=''
       def __init__(self) -> None:
           super().__init__()
           #内部会使用连接池
-          self.redis=redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT,db=Config.REDIS_DB)
+          self.redis=redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT,password=Config.REDIS_PASSWORD,db=Config.REDIS_DB)
 
-      def save_cookie(self,userId,cookie):
-          if cookie and userId:
-            self.redis.set(COOKIE_MAP+":"+userId,pickle.dumps(cookie),expire)
+      def get_cookie(self):
+          all_cookies_dict=self.redis.hgetall(COOKIE_MAP)
+          valueList=[requests.utils.dict_from_cookiejar(pickle.loads(value)) for key, value in all_cookies_dict.items()]
+          if all_cookies_dict:
+              return random.choice(valueList)
 
-
-      def get_cookie(self,userId):
-          obj=self.redis.get(COOKIE_MAP+":"+userId)
-          if obj:
-              return pickle.loads(obj)
-          return obj
       def get_ticker_handler(self,userId):
           obj = self.redis.get(TICKET_HANDLER_MAP+":"+userId)
           if obj:
@@ -80,5 +79,12 @@ class CacheService:
       def get_task(self, id):
           obj=self.redis.get(TASK_MAP + ":" + id)
           return obj
+      def get_useful_proxy(self):
+          url = 'http://10.10.10.76:5010/get'
+          response = requests.get(url)
+          body = json.loads(response.text)
+          return {'https':body['proxy']}
+      def lpush(self, key, value):
+          self.redis.lpush(key, value)
 
 

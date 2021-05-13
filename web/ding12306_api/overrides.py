@@ -3,7 +3,7 @@ from .settings import BASE_DIR
 from .DisableCsrf import DisableCSRFCheck
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1','localhost']
-REDIS_HSOT='127.0.0.1'
+REDIS_HOST='127.0.0.1'
 REDIS_DATABASE='2'
 LOGIN_URL='/api/account/login/'
 DATABASES = {
@@ -61,24 +61,48 @@ LOGIN_URL = 'account/login/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://" + REDIS_HSOT + ":6379/1",
+        "LOCATION": "redis://" + REDIS_HOST + ":6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            'DB': 0,
+            'PASSWORD': '',  # 这里没有设置密码
+            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # 这段可先注释掉否则出现 :Hiredis is not installed的错误
+            'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'timeout': 20,
+            }
         }
     },
     #存储userSession
     "session": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://"+REDIS_HSOT+":6379/2",
+        "LOCATION": "redis://"+REDIS_HOST+":6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            'DB': 0,
+            'PASSWORD': '123456',  # 这里没有设置密码
+            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # 这段可先注释掉否则出现 :Hiredis is not installed的错误
+            'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'timeout': 20,
+            }
         }
     },
     "sms_code": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://" + REDIS_HSOT + ":6379/3",
+        "LOCATION": "redis://" + REDIS_HOST + ":6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            'DB': 0,
+            'PASSWORD': '123456',  # 这里没有设置密码
+            # 'PARSER_CLASS': 'redis.connection.HiredisParser',  # 这段可先注释掉否则出现 :Hiredis is not installed的错误
+            'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'timeout': 20,
+            }
         }
     }
 }

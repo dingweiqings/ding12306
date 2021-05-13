@@ -1,4 +1,5 @@
-from task.celery import app
+
+from task.task_celery import app
 @app.task
 def add(x, y):
     return addSub(x,y)

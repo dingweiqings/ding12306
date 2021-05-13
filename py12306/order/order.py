@@ -10,7 +10,7 @@ from py12306.exceptions.BussinessException import BussinessException
 import re
 from py12306.logging_factory import getLogger
 logger=getLogger(__name__)
-
+from task.notification import send_notification
 
 class Order:
     """
@@ -54,7 +54,7 @@ class Order:
         :return:
         """
         # Debug
-        if Config().IS_DEBUG:
+        if False:
             self.order_id = 'test'
             self.order_did_success()
             return random.randint(0, 10) > 7
@@ -64,13 +64,13 @@ class Order:
         # 提交订单
         logger.info("Start sumbit order")
         order_request_res = self.submit_order_request()
-        if order_request_res == -1: #-1 表示已经有未处理的订单表示下单成功
+        if order_request_res ==-1 : #-1 表示已经有未处理的订单表示下单成功
             return self.order_did_success()
         elif not order_request_res: # 下单失败
-            return
+            return False
         init_res, self.is_slide, init_html = self.request_init_dc_page()
         if not init_res:
-            return
+            return False
         slide_info = {}
         #目前看一直为false
         if not self.check_order_info(slide_info):
@@ -83,14 +83,29 @@ class Order:
         if order_id:  # 发送通知
             self.order_id = order_id
             self.order_did_success()
+            logger.info("Return Normal order result %s",True)
             return True
+        logger.info("Return Normal order result %s ", False)
         return False
 
     def order_did_success(self):
         OrderLog.print_ticket_did_ordered(self.order_id)
         OrderLog.notification(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
                               OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_CONTENT.format(self.user_ins.username))
-        self.send_notification()
+        order_info={}
+        logger.info("Query ins %s",self.query_ins)
+        logger.info("User ins %s",self.user_ins)
+        passengers = [passenger.get('passenger_name') for passenger in self.query_ins['passengers']]
+        order_info['trainNum'] =self.query_ins['trainNum']
+        order_info['left_date'] = self.query_ins['left_date']
+        order_info['seat'] = self.query_ins['seat']
+        order_info['passengers'] = "".join(passengers)
+        order_info['left_station'] = self.query_ins['left_station']
+        order_info['arrive_station'] = self.query_ins['arrive_station']
+        order_info['left_time'] = self.query_ins['left_time']
+        order_info['username'] = self.user_ins.username
+        logger.info("Order info %s",order_info)
+        send_notification.delay(order_info)
         return True
 
     def send_notification(self):
@@ -165,7 +180,7 @@ class Order:
                 # 0125 增加排队时长到 5 分钟之后，更多的是 排队失败，得通过拿到订单列表才能确认，再打个 TODO
                 # self.order_id = 0  # 需要拿到订单号 TODO
                 logger.info("Exists order now")
-                return False
+                return -1
         return True
     #真正提交下单请求
     def check_order_info(self, slide_info=None):
@@ -413,6 +428,7 @@ class Order:
                 elif result_data.get('msg'):  # 失败 对不起，由于您取消次数过多，今日将不能继续受理您的订票请求。1月8日您可继续使用订票功能。
                     # TODO 需要增加判断 直接结束
                     logger.info("Today cancel too many times ,you can order tommorrow")
+                    raise BussinessException(500,'您取消次数过多,今日将不能继续受理您的订票请求')
                     return False
             elif result.get('messages') or result.get('validateMessages'):
                 OrderLog.add_quick_log(OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(
@@ -490,3 +506,5 @@ class Order:
         if slide_val:
             is_slide = int(slide_val[1]) == 1
         return True, is_slide, html
+if __name__ == '__main__':
+    add.delay(1,1)

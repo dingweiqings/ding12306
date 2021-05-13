@@ -1,7 +1,8 @@
 from py12306.log.base import BaseLog
 from py12306.helpers.func import *
 
-
+from py12306.logging_factory import getLogger
+logger=getLogger(__name__)
 @singleton
 class OrderLog(BaseLog):
     # 这里如果不声明，会出现重复打印，目前不知道什么原因
@@ -32,12 +33,12 @@ class OrderLog(BaseLog):
 
     MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE = '车票购买成功！'
     MESSAGE_ORDER_SUCCESS_NOTIFICATION_CONTENT = '请及时登录12306账号[{}]，打开 \'未完成订单\'，在30分钟内完成支付!'
-    MESSAGE_ORDER_SUCCESS_NOTIFICATION_INFO = '\t\t车次信息： {} {}[{}] -> {}[{}]，乘车日期 {}，席位：{}，乘车人：{}'
+    MESSAGE_ORDER_SUCCESS_NOTIFICATION_INFO = '\t\t车次信息： {}  {} -> {},发车时间:{},乘车日期 {},席位:{},乘车人:{}'
 
     MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_START_SEND = '正在发送语音通知...'
     MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_CONTENT = '你的车票 {} 到 {} 购买成功，请登录 12306 进行支付'
 
-    MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT = '订单号 {}，请及时登录12306账号[{}]，打开 \'未完成订单\'，在30分钟内完成支付!'
+    MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT = '订单号 {},请及时登录12306账号[{}],打开 \'未完成订单\',在30分钟内完成支付!'
 
     MESSAGE_JOB_CLOSED = '当前任务已结束'
 
@@ -59,13 +60,12 @@ class OrderLog(BaseLog):
     @classmethod
     def get_order_success_notification_info(cls, query):
         from py12306.query.job import Job
-        print("QUery ")
+        logger.info("Query  %s",query)
         passengers = [passenger.get('passenger_name') for passenger in query['passengers']]
-        return cls.MESSAGE_ORDER_SUCCESS_NOTIFICATION_INFO.format(query.get_info_of_train_number(),
-                                                                  query.get_info_of_left_station(),
-                                                                  query.get_info_of_train_left_time(),
-                                                                  query.get_info_of_arrive_station(),
-                                                                  query.get_info_of_train_arrive_time(),
-                                                                  query.get_info_of_left_date(),
-                                                                  query.current_seat_name,
+        return cls.MESSAGE_ORDER_SUCCESS_NOTIFICATION_INFO.format(query['trainNum'],
+                                                                  query['left_station'],
+                                                                  query['arrive_station'],
+                                                                  query['left_time'],
+                                                                  query['left_date'],
+                                                                  query['seat'],
                                                                   '，'.join(passengers))

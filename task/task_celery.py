@@ -7,12 +7,12 @@ import re
 # broker='redis://:123456@127.0.0.1:6379/2' 密码123456
 broker = 'amqp://12306:12306@10.10.10.76:5672/my_vhost'  # 无密码
 # 任务结果存储
-backend = 'redis://10.10.10.201:6379/1'
+backend = 'redis://:123456@10.10.10.201:6379/1'
 
 # 生成celery对象，'task'相当于key，用于区分celery对象
 # include参数需要指定任务模块, cerely 会扫描其中@app.task 的注解
 #指定集群计算的任务
-app = Celery('addTask', broker=broker, backend=backend,  include=['task.JobTest','task.grabbing'])
+app = Celery('addTask', broker=broker, backend=backend,  include=['task.JobTest','task.grabbing','task.notification'])
 # 时区
 app.conf.timezone = 'Asia/Shanghai'
 # 是否使用UTC
@@ -25,34 +25,18 @@ CELERY_TASK_SERIALIZER = 'pickle'
 app.conf.task_serializer=CELERY_TASK_SERIALIZER
 app.conf.accept_content=CELERY_ACCEPT_CONTENT
 app.conf.result_accept_content=CELERY_RESULT_SERIALIZER
+#会有默认队列
 task_routes = ([
     ('task.order', {'queue': 'order'}),
     ('task.grabbing', {'queue': 'grabbing'})
 ],)
 app.conf.task_routes=task_routes
-# 定时执行
-# app.conf.beat_schedule = {
-#     # 名字随意命名
-#     'add-every-5-seconds': {
-#         # 执行add_task下的addy函数
-#         'task': 'celery_task.add_task.add',
-#         # 每10秒执行一次
-#         'schedule': timedelta(seconds=10),
-#         # add函数传递的参数
-#         'args': (1, 2)
-#     },
-#     'add-every-10-seconds': {
-#         'task': 'celery_task.add_task.add',
-#         # crontab不传的参数默认就是每的意思，比如这里是每年每月每日每天每小时的5分执行该任务
-#         'schedule': crontab(minute=5),
-#         'args': (1, 2)
-#     }
-# }
 
-# app.conf.beat_schedule = {
-#     'add-every-30-seconds': {
-#         'task': 'task.grabbing.push_worker_queue',
-#         'schedule': 10.0,
-#         'args': ()
-#     },
-# }
+# 定时执行
+app.conf.beat_schedule = {
+    'add-every-30-seconds': {
+        'task': 'task.grabbing.push_worker_queue',
+        'schedule': 10.0,
+        'args': ()
+    },
+}

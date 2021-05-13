@@ -176,3 +176,9 @@ class Query:
 #         self.query_jobs = jobs
 #         QueryLog.add_quick_log(QueryLog.MESSAGE_JOBS_DID_CHANGED).flush()
 #         self.init_jobs()
+if __name__ == '__main__':
+    import urllib.parse
+    url='https://kyfw.12306.cn/otn/leftTicket/query?leftTicketDTO.train_date=2020-06-11&leftTicketDTO.from_station=HFH&leftTicketDTO.to_station=SZH&purpose_codes=ADULT'
+    result = urllib.parse.urlsplit(url)
+    query = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+    print(query)
